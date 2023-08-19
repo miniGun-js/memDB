@@ -157,14 +157,25 @@ memDB = (primKey = 'id') => {
      * @param {String} table Database table to select
      * @return {Proxy} Proxy prepared to interact with given table
      */
-    _use = (table)  => new Proxy(table ? db[table] : db, {
-        get: (target, prop) => {
-            if(features[prop]) {
-                return (...args) => table ? features[prop].call(null, table, ...args) : features[prop](...args)    
-            }
-            return target[prop]
+    _use = (table)  => {
+        if(!db[table]) {
+            db[table] = []
         }
-    }),
+        return new Proxy(
+            Object.defineProperty(
+                table ? db[table] : db,
+                'name',
+                { value: table ? `memDB->${table}` : 'memDB' }
+            ), 
+            {
+                get: (target, prop) => {
+                    if(features[prop]) {
+                        return (...args) => table ? features[prop].call(null, table, ...args) : features[prop](...args)    
+                    }
+                    return target[prop]
+                }
+            }
+    )},
 
     /**
      * @param {Object} features Mapping of public methods
